@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo } from "react"
-import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts"
 
 interface StockDetailChartProps {
   symbol: string
@@ -19,44 +18,48 @@ const generateDetailChartData = (symbol: string, timeRange: string) => {
     const volatility = timeRange === "1D" ? baseValue * 0.02 : baseValue * 0.08
     const trend = (i / points) * (baseValue * 0.05)
     const noise = (Math.sin((i * seed) / 10) + Math.cos(i / 5)) * volatility * 0.5
-    return {
-      time: i,
-      value: baseValue + trend + noise,
-    }
+    return baseValue + trend + noise
   })
 }
 
 export function StockDetailChart({ symbol, timeRange, positive }: StockDetailChartProps) {
   const data = useMemo(() => generateDetailChartData(symbol, timeRange), [symbol, timeRange])
 
-  const minValue = Math.min(...data.map((d) => d.value))
-  const maxValue = Math.max(...data.map((d) => d.value))
-  const padding = (maxValue - minValue) * 0.1
+  const minValue = Math.min(...data)
+  const maxValue = Math.max(...data)
+  const range = maxValue - minValue || 1
+
+  const width = 400
+  const height = 220
+  const padding = 10
+
+  const points = data
+    .map((value, index) => {
+      const x = (index / (data.length - 1)) * width
+      const y = height - padding - ((value - minValue) / range) * (height - padding * 2)
+      return `${x},${y}`
+    })
+    .join(" ")
+
+  const areaPath = `M0,${height} L${points
+    .split(" ")
+    .map((p, i) => (i === 0 ? p : `L${p}`))
+    .join(" ")} L${width},${height} Z`
 
   const color = positive ? "oklch(0.72 0.19 145)" : "oklch(0.65 0.2 25)"
 
   return (
     <div className="px-4 h-56">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id={`colorDetail-${symbol}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <YAxis domain={[minValue - padding, maxValue + padding]} hide />
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke={color}
-            strokeWidth={2}
-            fill={`url(#colorDetail-${symbol})`}
-            dot={false}
-            activeDot={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={`detailGradient-${symbol}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#detailGradient-${symbol})`} />
+        <polyline points={points} fill="none" stroke={color} strokeWidth="2" />
+      </svg>
     </div>
   )
 }

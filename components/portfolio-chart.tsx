@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo } from "react"
-import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts"
 
 interface PortfolioChartProps {
   timeRange: string
@@ -16,42 +15,48 @@ const generateChartData = (timeRange: string) => {
     const volatility = timeRange === "1D" ? 50 : timeRange === "1W" ? 200 : 500
     const trend = (i / points) * 400
     const noise = (Math.random() - 0.3) * volatility
-    return {
-      time: i,
-      value: baseValue + trend + noise + Math.sin(i / 5) * 100,
-    }
+    return baseValue + trend + noise + Math.sin(i / 5) * 100
   })
 }
 
 export function PortfolioChart({ timeRange }: PortfolioChartProps) {
   const data = useMemo(() => generateChartData(timeRange), [timeRange])
 
-  const minValue = Math.min(...data.map((d) => d.value))
-  const maxValue = Math.max(...data.map((d) => d.value))
-  const padding = (maxValue - minValue) * 0.1
+  const minValue = Math.min(...data)
+  const maxValue = Math.max(...data)
+  const range = maxValue - minValue || 1
+
+  const width = 400
+  const height = 180
+  const padding = 10
+
+  const points = data
+    .map((value, index) => {
+      const x = (index / (data.length - 1)) * width
+      const y = height - padding - ((value - minValue) / range) * (height - padding * 2)
+      return `${x},${y}`
+    })
+    .join(" ")
+
+  const areaPath = `M0,${height} L${points
+    .split(" ")
+    .map((p, i) => (i === 0 ? p : `L${p}`))
+    .join(" ")} L${width},${height} Z`
+
+  const linePath = `M${points.split(" ").join(" L")}`
 
   return (
     <div className="px-4 h-48">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="oklch(0.72 0.19 145)" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="oklch(0.72 0.19 145)" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <YAxis domain={[minValue - padding, maxValue + padding]} hide />
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke="oklch(0.72 0.19 145)"
-            strokeWidth={2}
-            fill="url(#colorValue)"
-            dot={false}
-            activeDot={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="oklch(0.72 0.19 145)" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="oklch(0.72 0.19 145)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill="url(#chartGradient)" />
+        <polyline points={points} fill="none" stroke="oklch(0.72 0.19 145)" strokeWidth="2" />
+      </svg>
     </div>
   )
 }

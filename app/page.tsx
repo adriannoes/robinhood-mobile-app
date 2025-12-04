@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { PortfolioHeader } from "@/components/portfolio-header"
 import { PortfolioChart } from "@/components/portfolio-chart"
 import { TimeRangeTabs } from "@/components/time-range-tabs"
@@ -8,6 +8,7 @@ import { BuyingPower } from "@/components/buying-power"
 import { WatchlistSection } from "@/components/watchlist-section"
 import { BottomNav } from "@/components/bottom-nav"
 import { StockDetail } from "@/components/stock-detail"
+import { SearchScreen } from "@/components/search-screen"
 
 export type Stock = {
   symbol: string
@@ -80,23 +81,32 @@ const watchlistData: Stock[] = [
 export default function Home() {
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null)
   const [timeRange, setTimeRange] = useState("1D")
-  const [mounted, setMounted] = useState(false)
+  const [activeTab, setActiveTab] = useState("home")
 
-  useEffect(() => {
-    console.log("[v0] App mounted successfully")
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
+  if (activeTab === "search") {
+    return (
+      <>
+        <SearchScreen
+          stocks={watchlistData}
+          onSelectStock={(stock) => {
+            setSelectedStock(stock)
+            setActiveTab("home")
+          }}
+          onBack={() => setActiveTab("home")}
+        />
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      </>
+    )
   }
 
   if (selectedStock) {
-    console.log("[v0] Rendering stock detail for:", selectedStock.symbol)
-    return <StockDetail stock={selectedStock} onBack={() => setSelectedStock(null)} />
+    return (
+      <>
+        <StockDetail stock={selectedStock} onBack={() => setSelectedStock(null)} />
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      </>
+    )
   }
-
-  console.log("[v0] Rendering main portfolio view")
 
   return (
     <main className="min-h-screen bg-background pb-20">
@@ -107,7 +117,7 @@ export default function Home() {
         <BuyingPower />
         <WatchlistSection stocks={watchlistData} onSelectStock={setSelectedStock} />
       </div>
-      <BottomNav />
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </main>
   )
 }
