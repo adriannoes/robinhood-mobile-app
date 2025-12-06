@@ -9,6 +9,7 @@ import { WatchlistSection } from "@/components/watchlist-section"
 import { BottomNav } from "@/components/bottom-nav"
 import { StockDetail } from "@/components/stock-detail"
 import { SearchScreen } from "@/components/search-screen"
+import { TransferScreen } from "@/components/transfer-screen"
 
 export type Stock = {
   symbol: string
@@ -82,6 +83,15 @@ export default function Home() {
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null)
   const [timeRange, setTimeRange] = useState("1D")
   const [activeTab, setActiveTab] = useState("home")
+
+  if (activeTab === "transfer") {
+    return (
+      <>
+        <TransferScreen onBack={() => setActiveTab("home")} />
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      </>
+    )
+  }
 
   if (activeTab === "search") {
     return (
